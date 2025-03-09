@@ -1,15 +1,11 @@
 package markdown
 
-import "strings"
+import (
+	"fmt"
+	"log/slog"
+)
 
 type Markdown struct{}
-
-const (
-	parseError = iota
-	parseHeading
-	parseHorizontalRule
-	parseUnorderedList
-)
 
 func New() Markdown {
 	return Markdown{}
@@ -19,41 +15,29 @@ func (m Markdown) MarkdownToHTML(markdown string) (string, error) {
 
 	html := ""
 
-	for line := range strings.Lines(markdown) {
+	l := lex(markdown)
 
-		// headings <h1> to <h6>
-		if strings.HasPrefix(line, "# ") {
-			html += "<h1>" + strings.TrimSpace(line[2:]) + "</h1>"
-			continue
-		}
-		if strings.HasPrefix(line, "## ") {
-			html += "<h2>" + strings.TrimSpace(line[3:]) + "</h2>"
-			continue
-		}
-		if strings.HasPrefix(line, "### ") {
-			html += "<h3>" + strings.TrimSpace(line[4:]) + "</h3>"
-			continue
-		}
-		if strings.HasPrefix(line, "#### ") {
-			html += "<h4>" + strings.TrimSpace(line[5:]) + "</h4>"
-			continue
-		}
-		if strings.HasPrefix(line, "##### ") {
-			html += "<h5>" + strings.TrimSpace(line[6:]) + "</h5>"
-			continue
-		}
-		if strings.HasPrefix(line, "###### ") {
-			html += "<h6>" + strings.TrimSpace(line[7:]) + "</h6>"
-			continue
-		}
+	for {
+		select {
+		case n := <-l.nodes:
+			switch n.Type {
+			case NodeError:
+				slog.Error("error parsing markdown", "content", n.Content)
+				return "", fmt.Errorf("error parsing markdown: %s", n.Content)
 
-		// horizontal rule <hr/>
-		if strings.HasPrefix(line, "---") {
-			html += "<hr/>"
-			continue
-		}
+			case NodeEOF:
+				slog.Info("end of file")
+				return html, nil
 
+			case NodeDocument:
+				slog.Info("emit", "type", n.Type, "content", n.Content)
+				html += n.Content
+
+			case NodeParagraph:
+				slog.Info("emit", "type", n.Type, "content", n.Content)
+				html += fmt.Sprintf("<p>%s</p>\n\n", n.Content)
+
+			}
+		}
 	}
-
-	return html, nil
 }

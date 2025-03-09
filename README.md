@@ -32,5 +32,6 @@ go install github.com/dearing/go-markdown/cmd/
 ## development notes
 
 - not attempting to be 100% compliant with [commonmark](https://commonmark.org/) and others, just enough for my content needs
+- aiming for [github flavored markdown](https://github.github.com/gfm/)
 - Rob Pike has a [good talk](https://www.youtube.com/watch?v=HxaD_trXwRE) about using a state machine lexical scanning in relation to templates that this project takes inspiration from. 
 - the root of this project will remain a library and the `cmd/` folder will contain a CLI tool
